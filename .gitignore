@@ -1,0 +1,17 @@
+# CMake / MSVC build output
+build/
+out/
+.vs/
+*.user
+*.suo
+CMakeUserPresets.json
+
+# Local logs (tool scripts write next to themselves)
+*.log
+
+# Built helper binary; rebuild from tools/wasapi-probe.cpp
+tools/wasapi-probe.exe
+
+# OS noise
+Thumbs.db
+Desktop.ini
