@@ -165,7 +165,7 @@ tools/                          工具链安装、部署、探针、灌拍、示
 | `tools/deploy-vst3.cmd` | 把构建出的 VST3 拷到系统 VST3 目录（需管理员） |
 | `tools/send-beats.ps1` | 向 `127.0.0.1:53711` 注入合成节拍 |
 | `tools/make-demo-sheet.ps1` | 生成无版权风险的示例精灵表 |
-| `tools/wasapi-probe.exe` | 独立 WASAPI 探针，验证共享/回环流能否创建 |
+| `tools/build-probe.cmd` | 构建独立 WASAPI 探针（输出 `tools/wasapi-probe.exe`） |
 | `tools/probe-and-grab.ps1` | 按进程定位 Overlay 窗口并截屏 |
 | `tools/grab-corner.ps1` | 截取屏幕右下角 |
 
@@ -180,7 +180,7 @@ tools/                          工具链安装、部署、探针、灌拍、示
   Restart-Service Audiosrv
   ```
 
-  无效再重启系统，然后重新选择节拍源。`tools\wasapi-probe.exe` 可独立复现。
+  无效再重启系统，然后重新选择节拍源。用 `tools\build-probe.cmd` 构建 `tools\wasapi-probe.exe` 后可独立复现。
 
 - **构建报 LNK1104。** Overlay 还在运行并锁住了 `.exe`：`taskkill /IM DanceOverlay.exe`。
 

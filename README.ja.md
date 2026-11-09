@@ -165,7 +165,7 @@ tools/                          ツールチェーン導入、デプロイ、プ
 | `tools/deploy-vst3.cmd` | ビルドした VST3 をシステムの VST3 フォルダへコピー（管理者権限） |
 | `tools/send-beats.ps1` | `127.0.0.1:53711` へ合成拍を注入 |
 | `tools/make-demo-sheet.ps1` | 著作権フリーのデモスプライトシートを生成 |
-| `tools/wasapi-probe.exe` | 共有/ループバックストリームを単体検証する WASAPI プローブ |
+| `tools/build-probe.cmd` | 単体 WASAPI プローブをビルド（`tools/wasapi-probe.exe` を出力） |
 | `tools/probe-and-grab.ps1` | プロセスから Overlay ウィンドウを特定してスクリーンショット |
 | `tools/grab-corner.ps1` | 画面右下をスクリーンショット |
 
@@ -180,7 +180,7 @@ tools/                          ツールチェーン導入、デプロイ、プ
   Restart-Service Audiosrv
   ```
 
-  改善しなければ再起動し、その後ビートソースを選び直してください。`tools\wasapi-probe.exe` で独立に再現できます。
+  改善しなければ再起動し、その後ビートソースを選び直してください。`tools\build-probe.cmd` で `tools\wasapi-probe.exe` をビルドすれば独立に再現できます。
 
 - **ビルドが LNK1104 で失敗する。** Overlay が起動中で `.exe` をロックしています。`taskkill /IM DanceOverlay.exe` を実行してください。
 

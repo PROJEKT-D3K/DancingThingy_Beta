@@ -165,7 +165,7 @@ Beat math: `beatPhase = ppq mod 1`; bounce height `|sin(pi * phase)|`; sprite fr
 | `tools/deploy-vst3.cmd` | Copy the built VST3 bundle to the system VST3 folder (run elevated) |
 | `tools/send-beats.ps1` | Inject synthetic beats into `127.0.0.1:53711` |
 | `tools/make-demo-sheet.ps1` | Generate a copyright-free demo sprite sheet |
-| `tools/wasapi-probe.exe` | Standalone WASAPI probe for shared/loopback streams |
+| `tools/build-probe.cmd` | Build the standalone WASAPI probe (`tools/wasapi-probe.exe`) |
 | `tools/probe-and-grab.ps1` | Locate the overlay window by process and screenshot it |
 | `tools/grab-corner.ps1` | Screenshot the bottom-right corner |
 
@@ -180,7 +180,7 @@ Beat math: `beatPhase = ppq mod 1`; bounce height `|sin(pi * phase)|`; sprite fr
   Restart-Service Audiosrv
   ```
 
-  Reboot if that does not help, then re-select the beat source. `tools\wasapi-probe.exe` reproduces the failure independently.
+  Reboot if that does not help, then re-select the beat source. Build `tools\wasapi-probe.exe` with `tools\build-probe.cmd` and run it to reproduce the failure independently.
 
 - **Build fails with LNK1104.** The overlay is still running and locking its `.exe`: `taskkill /IM DanceOverlay.exe`.
 
