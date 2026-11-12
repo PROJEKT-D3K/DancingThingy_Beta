@@ -1,8 +1,8 @@
 @echo off
 REM Build the DanceThingy installer with NSIS.
 REM
-REM   build-installer.cmd        -> dist\DanceThingy-0.3.0-Setup.exe
-REM   build-installer.cmd test   -> dist\DanceThingy-0.3.0-Setup-test.exe
+REM   build-installer.cmd        -> dist\DanceThingy-0.4.0-Setup.exe
+REM   build-installer.cmd test   -> dist\DanceThingy-0.4.0-Setup-test.exe
 REM                                 (user-level sandbox build for verification)
 REM
 REM NSIS_HOME defaults to E:\NSIS; override it if makensis lives elsewhere.

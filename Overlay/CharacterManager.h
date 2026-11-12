@@ -62,6 +62,7 @@ public:
     void rescan()
     {
         entries.clear();
+        imageCache.clear();   // the folders may have changed on disk
 
         juce::Array<juce::File> seen;
         constexpr const char* exts[] { ".png", ".gif", ".jpg", ".jpeg" };
@@ -157,7 +158,7 @@ public:
             return sh;
         }
 
-        sh.image = juce::ImageFileFormat::loadFrom (e.imageFile);
+        sh.image = getCachedImage (e.imageFile);
         if (sh.image.isNull())
         {
             sh.error = "cannot decode image (PNG/JPEG/GIF only; re-save BMP sheets as PNG)";
@@ -218,6 +219,25 @@ public:
     juce::String getExtraRootsAsString() const { return extraRootPaths.joinIntoString ("\n"); }
 
 private:
+    // Several dancers can point at the same sheet ("same character twice"), and
+    // a 16-row sheet is a few MB of pixels, so decode each file once. juce::Image
+    // is a ref-counted handle, so the copies below share the same pixel buffer.
+    // Cleared by rescan(), which is also the "the file changed on disk" path.
+    juce::Image getCachedImage (const juce::File& file) const
+    {
+        const auto key = file.getFullPathName();
+
+        if (imageCache.contains (key))
+            return imageCache[key];
+
+        auto img = juce::ImageFileFormat::loadFrom (file);
+
+        if (img.isValid())
+            imageCache.set (key, img);
+
+        return img;
+    }
+
     juce::Array<juce::File> scanRoots() const
     {
         juce::Array<juce::File> r;
@@ -230,6 +250,7 @@ private:
     juce::File        charactersDir;
     juce::StringArray extraRootPaths;
     juce::Array<Entry> entries;
+    mutable juce::HashMap<juce::String, juce::Image> imageCache;
 };
 
 } // namespace dt

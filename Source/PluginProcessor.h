@@ -44,8 +44,13 @@ public:
 
     TransportSnapshot getSnapshot() const { return snapshot.load (std::memory_order_relaxed); }
 
+    // Where the beat heartbeat currently goes. The overlay owns the setting
+    // (settings.xml); the sender re-reads it about once a second.
+    int getTargetPort() const { return targetPort.load (std::memory_order_relaxed); }
+
 private:
     std::atomic<TransportSnapshot> snapshot { TransportSnapshot{} };
+    std::atomic<int> targetPort { defaultPort };
     std::unique_ptr<DanceSenderThread> sender;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DanceThingyAudioProcessor)

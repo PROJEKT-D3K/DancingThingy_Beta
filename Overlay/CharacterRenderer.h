@@ -55,6 +55,16 @@ public:
     explicit SpriteCharacter (CharacterManager::Sheet&& s) : sheet (std::move (s))
     {
         classifyRows();
+
+        contentBounds = computeContentBounds();
+
+        juce::Logger::writeToLog ("[Character] '" + sheet.displayName + "' content "
+                                  + juce::String (contentBounds.getWidth()) + "x"
+                                  + juce::String (contentBounds.getHeight())
+                                  + " at " + juce::String (contentBounds.getX()) + ","
+                                  + juce::String (contentBounds.getY())
+                                  + " (cell " + juce::String (sheet.cellW) + "x"
+                                  + juce::String (sheet.cellH) + ")");
     }
 
     bool getCellSize (int& cwOut, int& chOut) const
@@ -64,8 +74,23 @@ public:
         return sheet.ok;
     }
 
+    // Bounding box of the actual artwork inside one cell, unioned over every
+    // frame. The overlay sizes its window to this instead of the full cell, so
+    // the interactive area hugs the character (see OverlaySession notes on the
+    // layered-window hit test).
+    bool getContentSize (int& wOut, int& hOut) const
+    {
+        wOut = contentBounds.getWidth();
+        hOut = contentBounds.getHeight();
+        return sheet.ok && wOut > 0 && hOut > 0;
+    }
+
+    const juce::Rectangle<int>& getContentBounds() const { return contentBounds; }
+
     int getHeldRow()    const { return heldRow; }
     int getWaitingRow() const { return waitingRow; }
+
+    const juce::String& getDisplayName() const { return sheet.displayName; }
 
     // dance rows exclude both the "Held" and "Waiting" rows
     int getDanceRowCount() const { return danceIndices.size(); }
@@ -248,12 +273,60 @@ private:
         g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
         g.drawImage (sheet.image,
                      0, 0, w, h,
-                     col * sheet.cellW, row * sheet.cellH,
-                     sheet.cellW, sheet.cellH, false);
+                     col * sheet.cellW + contentBounds.getX(),
+                     row * sheet.cellH + contentBounds.getY(),
+                     contentBounds.getWidth(), contentBounds.getHeight(), false);
+    }
+
+    // One pass over the sheet: every opaque-ish pixel contributes its position
+    // modulo the cell size, so the union across all frames/rows comes for free.
+    juce::Rectangle<int> computeContentBounds() const
+    {
+        const juce::Rectangle<int> full { 0, 0, juce::jmax (1, sheet.cellW), juce::jmax (1, sheet.cellH) };
+
+        if (! sheet.ok || sheet.image.isNull() || ! sheet.image.isARGB()
+            || sheet.cellW <= 0 || sheet.cellH <= 0)
+            return full;
+
+        const juce::Image::BitmapData bd (sheet.image, juce::Image::BitmapData::readOnly);
+
+        if (bd.pixelStride != 4)
+            return full;
+
+        constexpr int alphaThreshold = 8;
+
+        int minX = sheet.cellW, minY = sheet.cellH, maxX = -1, maxY = -1;
+
+        for (int y = 0; y < bd.height; ++y)
+        {
+            const auto* pixels = reinterpret_cast<const juce::PixelARGB*> (bd.getLinePointer (y));
+            const int cellY = y % sheet.cellH;
+
+            for (int x = 0; x < bd.width; ++x)
+            {
+                if (pixels[x].getAlpha() <= alphaThreshold)
+                    continue;
+
+                const int cellX = x % sheet.cellW;
+                minX = juce::jmin (minX, cellX);
+                maxX = juce::jmax (maxX, cellX);
+                minY = juce::jmin (minY, cellY);
+                maxY = juce::jmax (maxY, cellY);
+            }
+        }
+
+        if (maxX < minX || maxY < minY)
+            return full;
+
+        const auto r = juce::Rectangle<int> (minX, minY, maxX - minX + 1, maxY - minY + 1)
+                           .getIntersection (full);
+
+        return r.isEmpty() ? full : r;
     }
 
     CharacterManager::Sheet sheet;
     juce::Array<int> danceIndices;
+    juce::Rectangle<int> contentBounds { 0, 0, 1, 1 };
     int    heldRow    = -1;
     int    waitingRow = -1;
     int    rowLock = -1;

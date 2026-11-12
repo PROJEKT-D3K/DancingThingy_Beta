@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 
+#include "AppConfig.h"
 #include "PluginEditor.h"
 
 namespace dt
@@ -11,11 +12,15 @@ static double getOrDefault (const juce::Optional<double>& o, double d) { return 
 
 // Sends the latest transport snapshot over local UDP on its own thread, so
 // the audio thread never touches networking.
+//
+// The destination port is owned by the overlay's settings window; reading that
+// file once a second keeps the two in step without any extra IPC.
 class DanceSenderThread : public juce::Thread
 {
 public:
-    explicit DanceSenderThread (const std::atomic<TransportSnapshot>& sourceToRead)
-        : juce::Thread ("DanceBeatSender"), source (sourceToRead)
+    DanceSenderThread (const std::atomic<TransportSnapshot>& sourceToRead,
+                       std::atomic<int>& portToPublish)
+        : juce::Thread ("DanceBeatSender"), source (sourceToRead), portOut (portToPublish)
     {
     }
 
@@ -23,10 +28,30 @@ public:
     {
         juce::DatagramSocket socket;
 
+        int    target       = loadAppConfig().udpPort;
+        auto   lastPollMs   = juce::Time::getMillisecondCounter();
+        portOut.store (target, std::memory_order_relaxed);
+
         while (! threadShouldExit())
         {
+            const auto now = juce::Time::getMillisecondCounter();
+
+            if (now - lastPollMs >= 1000)
+            {
+                lastPollMs = now;
+
+                const int configured = loadAppConfig().udpPort;
+
+                if (configured != target)
+                {
+                    target = configured;
+                    portOut.store (target, std::memory_order_relaxed);
+                    juce::Logger::writeToLog ("[UDP] heartbeat port -> " + juce::String (target));
+                }
+            }
+
             const auto text = makePacket (source.load (std::memory_order_relaxed));
-            socket.write ("127.0.0.1", defaultPort,
+            socket.write ("127.0.0.1", target,
                           text.toRawUTF8(), (int) text.getNumBytesAsUTF8());
             wait (15);   // ~66 packets/s heartbeat
         }
@@ -34,6 +59,7 @@ public:
 
 private:
     const std::atomic<TransportSnapshot>& source;
+    std::atomic<int>& portOut;
 };
 
 DanceThingyAudioProcessor::DanceThingyAudioProcessor()
@@ -41,7 +67,7 @@ DanceThingyAudioProcessor::DanceThingyAudioProcessor()
                           .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
 {
-    sender = std::make_unique<DanceSenderThread> (snapshot);
+    sender = std::make_unique<DanceSenderThread> (snapshot, targetPort);
     sender->startThread (juce::Thread::Priority::low);
 }
 

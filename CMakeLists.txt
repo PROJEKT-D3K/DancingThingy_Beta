@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(DanceThingy VERSION 0.3.0 LANGUAGES C CXX)
+project(DanceThingy VERSION 0.4.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,6 +27,10 @@ FetchContent_MakeAvailable(JUCE)
 add_library(dance_core INTERFACE)
 target_include_directories(dance_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Shared)
 target_link_libraries(dance_core INTERFACE juce::juce_graphics juce::juce_gui_basics)
+
+# One version string for the overlay's About text, the plugin title and the
+# installer: the project version above is the only place it is written down.
+target_compile_definitions(dance_core INTERFACE DT_VERSION="${PROJECT_VERSION}")
 
 # ---- Companion VST3: audio passthrough + host transport -> UDP ----
 juce_add_plugin(DanceThingy
@@ -57,7 +61,9 @@ juce_add_gui_app(DanceOverlay
 
 target_sources(DanceOverlay PRIVATE
   Overlay/OverlayMain.cpp
-  Overlay/OverlayWindow.cpp
+  Overlay/OverlaySession.cpp
+  Overlay/DancerWindow.cpp
+  Overlay/SettingsWindow.cpp
   Overlay/LoopbackListener.cpp
   Overlay/WasapiLoopbackCapture.cpp)
 

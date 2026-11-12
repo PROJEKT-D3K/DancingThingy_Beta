@@ -2,16 +2,16 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
-#include "OverlayWindow.h"
+#include "OverlaySession.h"
 
 namespace dt
 {
 
-// System tray icon + menu. Mirrors the same menu used on right-click.
+// System tray icon + menu. Builds the same menu as the session's tray path.
 class TrayIconComponent : public juce::SystemTrayIconComponent
 {
 public:
-    explicit TrayIconComponent (OverlayWindow& ownerIn) : owner (ownerIn)
+    explicit TrayIconComponent (OverlaySession& ownerIn) : owner (ownerIn)
     {
         juce::Image icon (juce::Image::ARGB, 16, 16, true);
         {
@@ -23,26 +23,22 @@ public:
             g.fillEllipse (6.5f, 6.5f, 3.0f, 3.0f);
         }
         setIconImage (icon, icon);
-        setIconTooltip ("DanceOverlay");
+        refreshTooltip();
+    }
+
+    void refreshTooltip()
+    {
+        setIconTooltip (tr (Text::trayTooltip) + " - " + juce::String (owner.getNumDancers()));
     }
 
     void mouseDown (const juce::MouseEvent&) override
     {
         const auto at = juce::Desktop::getInstance().getMousePosition();
-        juce::PopupMenu menu;
-        owner.buildTrayMenu (menu);
-
-        menu.showMenuAsync (juce::PopupMenu::Options()
-                                .withTargetScreenArea ({ at.x, at.y, 1, 1 }),
-                            [safeOwner = juce::Component::SafePointer<OverlayWindow> (&owner)] (int r)
-                            {
-                                if (safeOwner != nullptr)
-                                    safeOwner->handleMenuResult (r);
-                            });
+        owner.showTrayMenu ({ at.x, at.y });
     }
 
 private:
-    OverlayWindow& owner;
+    OverlaySession& owner;
 };
 
 } // namespace dt

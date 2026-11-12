@@ -1,10 +1,14 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_data_structures/juce_data_structures.h>
 
-#include "OverlayWindow.h"
+#include "OverlaySession.h"
 
 namespace dt
 {
+
+#ifndef DT_VERSION
+ #define DT_VERSION "0.0.0"
+#endif
 
 // FileLogger writes into a buffered FileOutputStream and never flushes, so a
 // running overlay's log stays empty until the process exits - useless when the
@@ -44,16 +48,17 @@ class DanceOverlayApplication : public juce::JUCEApplication
 {
 public:
     const juce::String getApplicationName() override    { return "DanceOverlay"; }
-    const juce::String getApplicationVersion() override { return "0.3.0"; }
+    const juce::String getApplicationVersion() override { return DT_VERSION; }
     bool moreThanOneInstanceAllowed() override          { return true; }
 
-    void initialise (const juce::String&) override
+    void initialise (const juce::String& commandLine) override
     {
         const auto logFile = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                                  .getChildFile ("DanceOverlay")
                                  .getChildFile ("overlay.log");
 
-        fileLogger = std::make_unique<OverlayLogger> (logFile, "DanceOverlay starting");
+        fileLogger = std::make_unique<OverlayLogger> (logFile,
+                                                      "DanceOverlay " + getApplicationVersion() + " starting");
         juce::Logger::setCurrentLogger (fileLogger.get());
 
         appProperties = std::make_unique<juce::ApplicationProperties>();
@@ -66,19 +71,25 @@ public:
 
         appProperties->setStorageParameters (opts);
 
-        window = std::make_unique<OverlayWindow> (*appProperties->getUserSettings());
-        window->show();
+        session = std::make_unique<OverlaySession> (*appProperties->getUserSettings());
+        session->start();
+
+        // "--settings": open the settings window right away (also handy for a
+        // desktop shortcut that goes straight to the configuration).
+        if (commandLine.contains ("--settings"))
+            session->openSettingsWindow();
     }
 
     void shutdown() override
     {
-        if (appProperties != nullptr && window != nullptr)
-        {
-            window->saveToProperties();
-            appProperties->saveIfNeeded();
-        }
+        if (session != nullptr)
+            session->shutdown();
 
-        window.reset();
+        session.reset();
+
+        if (appProperties != nullptr)
+            appProperties->saveIfNeeded();
+
         appProperties.reset();
         juce::Logger::setCurrentLogger (nullptr);
         fileLogger.reset();
@@ -89,7 +100,7 @@ public:
     void anotherInstanceStarted (const juce::String&) override {}
 
 private:
-    std::unique_ptr<OverlayWindow>                window;
+    std::unique_ptr<OverlaySession>               session;
     std::unique_ptr<juce::ApplicationProperties>  appProperties;
     std::unique_ptr<OverlayLogger>                fileLogger;
 };

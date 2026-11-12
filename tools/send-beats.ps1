@@ -1,10 +1,11 @@
 param(
     [double] $bpm = 100.0,
-    [double] $seconds = 25.0
+    [double] $seconds = 25.0,
+    [int]    $port = 53711
 )
 
 $udp = New-Object System.Net.Sockets.UdpClient(0)
-$ep = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Loopback, 53711)
+$ep = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Loopback, $port)
 
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 $step = $bpm / 40.0   # advance one beat per 25 ms tick

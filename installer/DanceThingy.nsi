@@ -14,8 +14,8 @@ Unicode True
 !include "x64.nsh"
 
 !define APP_NAME "DanceThingy"
-!define APP_VERSION "0.3.0"
-!define APP_VERSION4 "0.3.0.0"
+!define APP_VERSION "0.4.0"
+!define APP_VERSION4 "0.4.0.0"
 !define APP_PUBLISHER "MusicalThingy"
 !define APP_EXE "DanceOverlay.exe"
 !define VST3_BUNDLE "DanceThingy.vst3"
