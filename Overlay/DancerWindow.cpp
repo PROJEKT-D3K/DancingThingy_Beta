@@ -154,16 +154,6 @@ void DancerWindow::snapToCorner (int cascadeIndex)
     state.y = getY();
 }
 
-juce::Point<int> DancerWindow::getNewDancerPlacement() const
-{
-    const auto area = primaryUserArea();
-
-    auto p = juce::Point<int> { getX() + 40, getY() + 40 };
-    p.x = juce::jlimit (area.getX(), juce::jmax (area.getX(), area.getRight() - getWidth() - 40), p.x);
-    p.y = juce::jlimit (area.getY(), juce::jmax (area.getY(), area.getBottom() - getHeight() - 40), p.y);
-    return p;
-}
-
 void DancerWindow::notifyGlobalStyleChanged()
 {
     // Turning click-through off has to rebuild the image too: the frames pushed
@@ -636,58 +626,35 @@ void DancerWindow::buildMenu (juce::PopupMenu& menu)
 
     menu.addSeparator();
 
-    // ---- add / remove -----------------------------------------------------
-    {
-        juce::PopupMenu add;
-        add.addItem (menuAddProcedural, tr (Text::charProcedural));
-
-        const int n = list.getNumEntries();
-        if (n > 0)
-        {
-            juce::PopupMenu sheets;
-
-            for (int i = 0; i < n && (menuAddSheetFirst + i) <= menuAddSheetLast; ++i)
-                sheets.addItem (menuAddSheetFirst + i, list.getEntry (i).displayName,
-                                list.entryHasTxt (i));
-
-            add.addSubMenu (tr (Text::menuFromSheets), sheets);
-        }
-
-        menu.addSubMenu (tr (Text::menuAddCharacter), add);
-    }
-
     // The last character cannot be removed: with no window there is nothing
     // left to click, and the tray icon would be the only way back.
     menu.addItem (menuRemove, tr (Text::menuRemoveCharacter), session.getNumDancers() > 1);
-    menu.addItem (menuSettings, tr (Text::menuSettings));
 
     menu.addSeparator();
-    menu.addItem (menuClickThrough, tr (Text::menuClickThrough), true, session.isClickThrough());
-    menu.addItem (menuAlwaysOnTop,  tr (Text::menuAlwaysOnTop),  true, session.isAlwaysOnTop());
-    menu.addItem (menuSnap, tr (Text::menuSnapCorner));
 
-    menu.addSeparator();
-    menu.addItem (menuQuit, tr (Text::menuQuitOverlay));
+    // Everything below is shared with the tray menu, same order and wording:
+    // the tray menu is exactly this tail.
+    session.buildSharedMenuTail (menu);
 }
 
 void DancerWindow::handleMenuResult (int id)
 {
     auto& list = session.getCharacters();
 
+    // Ids from the shared tail belong to the session.
+    if (id >= sessionSharedMenuFirst)
+    {
+        session.handleTrayMenuResult (id);
+        return;
+    }
+
     switch (id)
     {
-        case menuClickThrough: session.setClickThrough (! session.isClickThrough()); break;
-        case menuAlwaysOnTop:  session.setAlwaysOnTop (! session.isAlwaysOnTop());   break;
-        case menuSnap:         session.snapAllToCorner(); break;
-        case menuSettings:     session.openSettingsWindow(); break;
-        case menuQuit:         session.quitApplication(); break;
-
         case menuRemove:
             session.removeDancer (this);
             return;   // this window is about to go away
 
-        case menuProcedural:    selectCharacterPath ({}); break;
-        case menuAddProcedural: session.addDancer ({}, getNewDancerPlacement()); break;
+        case menuProcedural: selectCharacterPath ({}); break;
 
         case menuImportFolder: session.promptForCharacterFolder(); break;
         case menuAddFile:      session.promptForCharacterFile(); break;
@@ -708,12 +675,6 @@ void DancerWindow::handleMenuResult (int id)
                 const int i = id - menuCharFirst;
                 if (i < list.getNumEntries())
                     selectCharacterPath (list.getEntry (i).imageFile.getFullPathName());
-            }
-            else if (id >= menuAddSheetFirst && id <= menuAddSheetLast)
-            {
-                const int i = id - menuAddSheetFirst;
-                if (i < list.getNumEntries())
-                    session.addDancerFromSheet (list.getEntry (i).imageFile, getNewDancerPlacement());
             }
             else if (id >= menuRowFirst && id <= menuRowLast)
             {

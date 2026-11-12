@@ -92,6 +92,11 @@ public:
 
     // --- menus / windows ---------------------------------------------------
     void buildTrayMenu (juce::PopupMenu& menu);
+    // The part both menus share, in the same order: character list, settings,
+    // click-through / always-on-top / snap, quit. The character menu appends
+    // its own per-character entries and then calls this, so the tray menu is
+    // literally the tail of the character menu.
+    void buildSharedMenuTail (juce::PopupMenu& menu);
     void handleTrayMenuResult (int id);
     void showTrayMenu (juce::Point<int> screenPos);
     void openSettingsWindow();

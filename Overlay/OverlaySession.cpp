@@ -652,6 +652,11 @@ void OverlaySession::promptForCharacterFile()
 //==============================================================================
 void OverlaySession::buildTrayMenu (juce::PopupMenu& menu)
 {
+    buildSharedMenuTail (menu);
+}
+
+void OverlaySession::buildSharedMenuTail (juce::PopupMenu& menu)
+{
     {
         juce::PopupMenu chars;
 
@@ -662,6 +667,7 @@ void OverlaySession::buildTrayMenu (juce::PopupMenu& menu)
             chars.addItem (trayDancerFirst + i, makeDancerLabel (i), true, false);
 
         chars.addSeparator();
+        chars.addItem (-1, tr (Text::trayAddCharacter), false, false);
         chars.addItem (trayAddProcedural, tr (Text::charProcedural));
 
         const int n = characters.getNumEntries();
@@ -680,10 +686,10 @@ void OverlaySession::buildTrayMenu (juce::PopupMenu& menu)
     }
 
     menu.addItem (traySettings, tr (Text::menuSettings));
-    menu.addItem (traySnap, tr (Text::menuSnapCorner));
     menu.addSeparator();
     menu.addItem (trayClickThrough, tr (Text::menuClickThrough), true, clickThrough);
     menu.addItem (trayAlwaysOnTop, tr (Text::menuAlwaysOnTop), true, alwaysOnTop);
+    menu.addItem (traySnap, tr (Text::menuSnapCorner));
     menu.addSeparator();
     menu.addItem (trayQuit, tr (Text::menuQuitOverlay));
 }

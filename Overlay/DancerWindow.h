@@ -76,7 +76,6 @@ private:
     void applyCharacterSize();
     void refreshSpriteSettings();
     void pushLayeredImage (const juce::Image& img);
-    juce::Point<int> getNewDancerPlacement() const;   // cascade next to this one
 
     OverlaySession& session;
 
@@ -114,9 +113,10 @@ private:
     bool frameDirty = true;
 
     // ---- menu ids (local to this window) ---------------------------------
-    static constexpr int menuClickThrough = 1, menuAlwaysOnTop = 2;
-    static constexpr int menuSnap = 3, menuQuit = 4, menuSettings = 5;
-    static constexpr int menuRemove = 6, menuAddProcedural = 7;
+    // Everything at or above 900 comes from OverlaySession::buildSharedMenuTail
+    // and is forwarded to the session; the values below stay local.
+    static constexpr int sessionSharedMenuFirst = 900;
+    static constexpr int menuRemove = 6;
     static constexpr int menuImportFolder = 8, menuAddFile = 9;
     static constexpr int menuPatternAuto = 10, menuPatternFirst = 11, menuPatternLast = 13;
     static constexpr int menuRowAuto = 20, menuRowFirst = 200, menuRowLast = 279;
@@ -127,7 +127,6 @@ private:
     static constexpr int menuOpenFolder = 78, menuRefresh = 79;
     static constexpr int menuProcedural = 90;
     static constexpr int menuCharFirst = 100, menuCharLast = 199;
-    static constexpr int menuAddSheetFirst = 600, menuAddSheetLast = 699;
 
     JUCE_DECLARE_NON_COPYABLE (DancerWindow)
 };
