@@ -61,6 +61,11 @@ DancerWindow::DancerWindow (OverlaySession& s, const DancerState& initialState)
 {
     setOpaque (false);
 
+    // The context menu needs a focused JUCE component: JUCE's menu window
+    // dismisses itself when nothing in the app has focus and the cursor is not
+    // over it. A tool window still has to accept focus for that to happen.
+    setWantsKeyboardFocus (true);
+
     state.speed       = juce::jlimit (0.25, 4.0, state.speed);
     state.sizePercent = juce::jlimit (25, 400, state.sizePercent);
 
@@ -357,7 +362,8 @@ void DancerWindow::mouseDown (const juce::MouseEvent& e)
 {
     if (e.mods.isRightButtonDown() || e.mods.isPopupMenu())
     {
-        showMenuAt ({ e.getScreenX(), e.getScreenY() });
+        contextMenuPending = true;
+        contextMenuAt = { e.getScreenX(), e.getScreenY() };
         return;
     }
 
@@ -413,16 +419,34 @@ void DancerWindow::mouseDrag (const juce::MouseEvent& e)
 
 void DancerWindow::mouseUp (const juce::MouseEvent& e)
 {
-    juce::ignoreUnused (e);
+    mouseHeld  = false;
+    frameDirty = true;
+
+    if (contextMenuPending)
+    {
+        contextMenuPending = false;
+
+        // Released over the character: open the menu. Dragged away and released
+        // elsewhere: treat it as a cancelled gesture.
+        if (contains (e.getPosition()))
+        {
+            const auto at = contextMenuAt;
+            juce::Component::SafePointer<DancerWindow> safeThis (this);
+
+            juce::MessageManager::callAsync ([safeThis, at]
+                                             {
+                                                 if (safeThis != nullptr)
+                                                     safeThis->showMenuAt (at);
+                                             });
+        }
+        return;
+    }
 
     if (resizing)
     {
         resizing = false;
         session.saveToProperties();   // resize does not go through the menu path
     }
-
-    mouseHeld  = false;
-    frameDirty = true;
 }
 
 void DancerWindow::userTriedToCloseWindow()
@@ -461,17 +485,52 @@ void DancerWindow::filesDropped (const juce::StringArray& files, int x, int y)
 }
 
 //==============================================================================
+void DancerWindow::setActivatableForMenu (bool activatable)
+{
+   #ifdef _WIN32
+    auto* peer = getPeer();
+    if (peer == nullptr)
+        return;
+
+    const auto hwnd = (HWND) peer->getNativeHandle();
+
+    auto ex = GetWindowLongPtrW (hwnd, GWL_EXSTYLE);
+    ex = activatable ? (ex & ~(LONG_PTR) WS_EX_NOACTIVATION)
+                     : (ex | WS_EX_NOACTIVATION);
+    SetWindowLongPtrW (hwnd, GWL_EXSTYLE, ex);
+
+    if (activatable)
+    {
+        // The user just clicked this window, so we are allowed to take the
+        // foreground; without it the menu window cannot get focus either.
+        SetForegroundWindow (hwnd);
+        SetFocus (hwnd);
+    }
+   #else
+    juce::ignoreUnused (activatable);
+   #endif
+}
+
 void DancerWindow::showMenuAt (juce::Point<int> screenPos)
 {
     juce::PopupMenu menu;
     buildMenu (menu);
 
+    setActivatableForMenu (true);
+
     menu.showMenuAsync (juce::PopupMenu::Options()
                             .withTargetScreenArea ({ screenPos.x, screenPos.y, 1, 1 }),
                         [safeThis = juce::Component::SafePointer<DancerWindow> (this)] (int r)
                         {
+                            // One line per menu interaction: enough to tell "the
+                            // menu never opened" from "it opened and was dismissed".
+                            juce::Logger::writeToLog ("[Input] menu result " + juce::String (r));
+
                             if (safeThis != nullptr)
+                            {
+                                safeThis->setActivatableForMenu (false);
                                 safeThis->handleMenuResult (r);
+                            }
                         });
 }
 

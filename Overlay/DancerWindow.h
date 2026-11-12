@@ -63,6 +63,12 @@ private:
     void handleMenuResult (int id);
     void showMenuAt (juce::Point<int> screenPos);
 
+    // A WS_EX_NOACTIVATION window is never focused, so a popup menu opened from
+    // it has no JUCE component with focus and JUCE's menu dismisses itself
+    // immediately (PopupMenu's checkButtonState). Allow activation just for the
+    // duration of the menu, then take it back.
+    void setActivatableForMenu (bool activatable);
+
     void selectCharacterPath (const juce::String& path);
     bool loadFromPath (const juce::String& path);   // false = not scannable this run
     void selectProcedural();
@@ -81,6 +87,13 @@ private:
     std::unique_ptr<SpriteCharacter> spriteChar;
 
     bool mouseHeld = false;
+
+    // A right-click opens its menu on the *release*: showing a modal menu while
+    // the button is still down means the button-up lands on this window (it
+    // holds the mouse capture), which JUCE treats as an input attempt during
+    // modality and the menu closes instantly.
+    bool contextMenuPending = false;
+    juce::Point<int> contextMenuAt {};
 
     // Shift+drag resize
     bool resizing = false;
