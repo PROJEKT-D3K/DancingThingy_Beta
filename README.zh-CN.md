@@ -85,7 +85,17 @@ taskkill /IM DanceOverlay.exe
 ## 安装
 
 1. 把 `DanceThingy.vst3` 拷到 `C:\Program Files\Common Files\VST3\`（需要管理员）。`tools\deploy-vst3.cmd` 会从构建目录完成这一步。
-2. `DanceOverlay.exe` 放在任意位置双击运行。没有安装器，也不会写注册表（除 JUCE 的设置文件外）。
+2. `DanceOverlay.exe` 放在任意位置双击运行。下面的安装包会自动完成这一步，并注册卸载项。
+
+### 构建安装包
+
+`installer\build-installer.cmd` 用 NSIS 3.x 生成 `dist\DanceThingy-<version>-Setup.exe`。安装包会同时安装两个部件、注册卸载项，并在系统缺少 VC++ 2015-2022 运行库时静默安装随包携带的运行库。`makensis.exe` 不在 `E:\NSIS` 时，用 `NSIS_HOME` 指定。
+
+```cmd
+installer\build-installer.cmd
+```
+
+加 `test` 参数可生成用户级沙箱版，安装到 `%TEMP%`，仅用于验证，不用于分发。
 
 ## 使用
 
@@ -152,6 +162,7 @@ Overlay/CharacterRenderer.h     渲染接口：程序小人 + 精灵表实现
 Overlay/TrayIcon.h              托盘入口
 Overlay/LoopbackListener.*      起音检测 + BPM 估计
 Overlay/WasapiLoopbackCapture.* 原生 WASAPI 回环采集（全部 COM 调用在 MTA 线程）
+installer/                      NSIS 安装脚本与构建脚本
 tools/                          工具链安装、部署、探针、灌拍、示例精灵表
 ```
 

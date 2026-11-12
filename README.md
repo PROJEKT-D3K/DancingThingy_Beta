@@ -85,7 +85,17 @@ taskkill /IM DanceOverlay.exe
 ## Install
 
 1. Copy `DanceThingy.vst3` to `C:\Program Files\Common Files\VST3\` (administrator). `tools\deploy-vst3.cmd` does this from the build tree.
-2. Put `DanceOverlay.exe` anywhere and run it. There is no installer and no registry writes beyond JUCE's settings file.
+2. Put `DanceOverlay.exe` anywhere and run it. The optional installer below automates this and registers an uninstaller.
+
+### Build the installer
+
+`installer\build-installer.cmd` produces `dist\DanceThingy-<version>-Setup.exe` with NSIS 3.x. It installs both components, registers an uninstaller, and bundles the VC++ 2015-2022 runtime for machines that do not have it. Set `NSIS_HOME` if `makensis.exe` is not in `E:\NSIS`.
+
+```cmd
+installer\build-installer.cmd
+```
+
+Add `test` for a user-level sandbox build that installs under `%TEMP%` (verification only, not for distribution).
 
 ## Usage
 
@@ -152,6 +162,7 @@ Overlay/CharacterRenderer.h     Renderer interface; procedural + sprite implemen
 Overlay/TrayIcon.h              Tray entry point
 Overlay/LoopbackListener.*      Onset detection + BPM estimation
 Overlay/WasapiLoopbackCapture.* Native WASAPI loopback capture (all COM on an MTA thread)
+installer/                      NSIS installer script and build script
 tools/                          Toolchain installer, deploy script, probes, beat injector, demo sheet
 ```
 

@@ -1,6 +1,7 @@
 # CMake / MSVC build output
 build/
 out/
+dist/
 .vs/
 *.user
 *.suo
